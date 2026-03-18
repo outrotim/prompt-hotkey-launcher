@@ -50,10 +50,10 @@ export default function Settings() {
     <div className="settings-container">
       <div className="settings-titlebar" />
 
-      <h1>\u8bbe\u7f6e</h1>
+      <h1>设置</h1>
 
       <div className="settings-section">
-        <h3>\u5feb\u6377\u952e</h3>
+        <h3>快捷键</h3>
         <div className="shortcut-field">
           <div
             className={`shortcut-display ${recording ? 'recording' : ''}`}
@@ -62,7 +62,7 @@ export default function Settings() {
             onClick={() => setRecording(true)}
             onBlur={() => setRecording(false)}
           >
-            {recording ? '\u8bf7\u6309\u4e0b\u5feb\u6377\u952e\u7ec4\u5408...' : shortcut}
+            {recording ? '请按下快捷键组合...' : shortcut}
           </div>
           <button
             className="btn btn-sm"
@@ -70,19 +70,19 @@ export default function Settings() {
               setShortcut('Control+Space');
             }}
           >
-            \u6062\u590d\u9ed8\u8ba4
+            恢复默认
           </button>
         </div>
-        <p className="settings-hint">\u70b9\u51fb\u4e0a\u65b9\u533a\u57df\uff0c\u7136\u540e\u6309\u4e0b\u65b0\u7684\u5feb\u6377\u952e\u7ec4\u5408</p>
+        <p className="settings-hint">点击上方区域，然后按下新的快捷键组合</p>
       </div>
 
       <div className="settings-section">
-        <h3>\u4e3b\u9898</h3>
+        <h3>主题</h3>
         <div className="theme-options">
           {[
-            { value: 'system', label: '\u8ddf\u968f\u7cfb\u7edf' },
-            { value: 'light', label: '\u6d45\u8272' },
-            { value: 'dark', label: '\u6df1\u8272' },
+            { value: 'system', label: '跟随系统' },
+            { value: 'light', label: '浅色' },
+            { value: 'dark', label: '深色' },
           ].map(opt => (
             <button
               key={opt.value}
@@ -96,7 +96,7 @@ export default function Settings() {
       </div>
 
       <div className="settings-section">
-        <h3>\u63d0\u793a\u8bcd\u76ee\u5f55</h3>
+        <h3>提示词目录</h3>
         <div className="dir-field">
           <input
             type="text"
@@ -105,12 +105,12 @@ export default function Settings() {
             className="dir-input"
           />
         </div>
-        <p className="settings-hint">\u63d0\u793a\u8bcd Markdown \u6587\u4ef6\u5b58\u653e\u4f4d\u7f6e</p>
+        <p className="settings-hint">提示词 Markdown 文件存放位置</p>
       </div>
 
       <div className="settings-footer">
         <button className="btn btn-primary" onClick={handleSave}>
-          {saved ? '\u5df2\u4fdd\u5b58 \u2713' : '\u4fdd\u5b58\u8bbe\u7f6e'}
+          {saved ? '已保存 ✓' : '保存设置'}
         </button>
       </div>
     </div>
