@@ -1,0 +1,36 @@
+appId: com.promptlauncher.app
+productName: Prompt Launcher
+copyright: Copyright © 2024
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+  icon: build/icon.icns
+  darkModeSupport: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  title: Prompt Launcher
+  artifactName: PromptLauncher-${version}.${ext}
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - prompts/**/*
+  - "!node_modules/**/*.map"
+  - "!node_modules/**/*.md"
+
+publish:
+  - provider: github
+    owner: your-username
+    repo: prompt-hotkey-launcher
+
+extraResources:
+  - from: prompts/
+    to: prompts/
