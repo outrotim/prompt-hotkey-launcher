@@ -1,82 +1,75 @@
-/** A single prompt template */
-export interface PromptItem {
+export type Locale = "en" | "zh-CN";
+
+export const RESERVED_VARIABLE_KEYS = ["clipboard"] as const;
+
+export const VALID_OUTPUT_MODES = ["paste", "clipboard", "file"] as const;
+export type PromptOutputMode = (typeof VALID_OUTPUT_MODES)[number];
+export type PromptDeliveryMode = "auto" | "clipboard";
+
+export type PromptVariableKind = "text" | "enum";
+
+export type PromptVariable = {
+  key: string;
+  kind: PromptVariableKind;
+  required: boolean;
+  options: string[];
+  defaultValue?: string;
+};
+
+export type PromptAfterAction = {
+  type: "shell";
+  command: string;
+};
+
+export type PromptFileMetadata = {
+  favorite: boolean;
+  tags: string[];
+  aliases: string[];
+  output?: PromptOutputMode;
+  outputFile?: string;
+  after?: PromptAfterAction;
+};
+
+export type PromptItem = {
+  id: string;
+  packId: string;
+  title: string;
+  body: string;
+  description: string;
+  favorite: boolean;
+  tags: string[];
+  aliases: string[];
+  variables: PromptVariable[];
+  sourceFile: string;
+  output?: PromptOutputMode;
+  outputFile?: string;
+  after?: PromptAfterAction;
+  useCount?: number;
+  lastUsedAt?: string;
+  lastValues?: Record<string, string>;
+};
+
+export type PromptPack = {
   id: string;
   name: string;
-  content: string;
-  variables: string[];
-  /** Number of times used */
-  useCount: number;
-  /** Whether user marked as favorite */
-  isFavorite: boolean;
-  /** Last used timestamp */
-  lastUsedAt?: number;
-}
+  sourceFile: string;
+  metadata: PromptFileMetadata;
+  items: PromptItem[];
+};
 
-/** A collection of prompts */
-export interface PromptPack {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  prompts: PromptItem[];
-  /** Source markdown file path */
-  filePath: string;
-}
+export type PromptLibrary = {
+  packs: PromptPack[];
+  items: PromptItem[];
+};
 
-/** Variable fill history */
-export interface VariableHistory {
-  [variableName: string]: string[];
-}
+export type PromptSelectionPayload = {
+  promptId: string;
+  variables: Record<string, string>;
+  deliveryMode?: PromptDeliveryMode;
+};
 
-/** App settings */
-export interface AppSettings {
-  /** Global shortcut key combination */
-  shortcut: string;
-  /** Max recent items to show */
-  maxRecentItems: number;
-  /** Prompts directory path */
-  promptsDir: string;
-  /** Theme: light or dark */
-  theme: 'light' | 'dark' | 'system';
-}
-
-/** IPC channel names */
-export const IPC_CHANNELS = {
-  // Popup
-  SHOW_POPUP: 'show-popup',
-  HIDE_POPUP: 'hide-popup',
-  GET_PACKS: 'get-packs',
-  SEARCH_PROMPTS: 'search-prompts',
-  INSERT_PROMPT: 'insert-prompt',
-  GET_RECENT: 'get-recent',
-  TOGGLE_FAVORITE: 'toggle-favorite',
-
-  // Variables
-  GET_VARIABLE_HISTORY: 'get-variable-history',
-  SAVE_VARIABLE_HISTORY: 'save-variable-history',
-
-  // Settings
-  GET_SETTINGS: 'get-settings',
-  SAVE_SETTINGS: 'save-settings',
-
-  // Manager
-  GET_ALL_PACKS: 'get-all-packs',
-  SAVE_PACK: 'save-pack',
-  DELETE_PACK: 'delete-pack',
-  SAVE_PROMPT: 'save-prompt',
-  DELETE_PROMPT: 'delete-prompt',
-  IMPORT_MARKDOWN: 'import-markdown',
-  EXPORT_MARKDOWN: 'export-markdown',
-
-  // Window
-  OPEN_MANAGER: 'open-manager',
-  OPEN_SETTINGS: 'open-settings',
-  CURSOR_POSITION: 'cursor-position',
-} as const;
-
-export const DEFAULT_SETTINGS: AppSettings = {
-  shortcut: 'Control+Space',
-  maxRecentItems: 10,
-  promptsDir: '',
-  theme: 'system',
+export type PromptUsageRecord = {
+  promptId: string;
+  usedAt: string;
+  values: Record<string, string>;
 };

@@ -1,0 +1,14 @@
+{
+  "name": "promptbar-native-paste",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "gypfile": true,
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^11.5.0"
+  }
+}

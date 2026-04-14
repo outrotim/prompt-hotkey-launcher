@@ -1,42 +1,79 @@
-import { Tray, Menu, nativeImage, app } from 'electron';
-import { openManager, openSettings, showPopup } from './window';
+import { Menu, Tray, app, nativeImage } from "electron";
+import type { AppSettings } from "./settings";
+import { buildTrayMenuSpec, resolveTrayAssetPath, shouldUseTemplateTrayImage } from "./tray-config";
 
-let tray: Tray | null = null;
+type TrayManagerOptions = {
+  togglePopup: () => void;
+  openManager: () => void;
+  openSettings: () => void;
+  toggleLaunchAtLogin: (enabled: boolean) => void;
+};
 
-export function createTray(): void {
-  const icon = nativeImage.createFromDataURL(
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAbwAAAG8B8aLcQwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABhSURBVDiNY2AYBYMBMDIwMPxnYGD4T4phJgYGBgZGBgYGRkoNYIIKUMUAJmINUOoFRgYGBkZKvMDEQKYXKA4DJmq4gCpeoIoXqBIGTFRxAdW8QJUwYKKKC6jmBYYhDQAA5DkMEXbDkiYAAAAASUVORK5CYII='
-  );
+export function createTrayManager(options: TrayManagerOptions) {
+  let tray: Tray | null = null;
 
-  icon.setTemplateImage(true);
-  tray = new Tray(icon);
+  const ensureTray = (settings: AppSettings) => {
+    if (!tray) {
+      const icon = nativeImage.createFromPath(
+        resolveTrayAssetPath(app.isPackaged, process.resourcesPath, app.getAppPath(), process.platform)
+      );
+      if (shouldUseTemplateTrayImage(process.platform)) {
+        icon.setTemplateImage(true);
+      }
+      tray = new Tray(icon);
+      tray.setToolTip("PromptBar");
+    }
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Show Launcher',
-      click: () => showPopup(),
-    },
-    { type: 'separator' },
-    {
-      label: 'Manage Prompts',
-      click: () => openManager(),
-    },
-    {
-      label: 'Settings',
-      click: () => openSettings(),
-    },
-    { type: 'separator' },
-    {
-      label: `Prompt Launcher v${app.getVersion()}`,
-      enabled: false,
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => app.quit(),
-    },
-  ]);
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        ...buildTrayMenuSpec(settings.launchAtLogin).map((item) => {
+          if (item.type === "separator") {
+            return { type: "separator" as const };
+          }
 
-  tray.setToolTip('Prompt Launcher');
-  tray.setContextMenu(contextMenu);
+          if (item.action === "toggleLaunchAtLogin") {
+            return {
+              label: item.label,
+              type: "checkbox" as const,
+              checked: item.checked,
+              click: (menuItem: { checked: boolean }) => {
+                options.toggleLaunchAtLogin(Boolean(menuItem.checked));
+              }
+            };
+          }
+
+          return {
+            label: item.label,
+            type: "normal" as const,
+            click: () => {
+              if (item.action === "togglePopup") {
+                options.togglePopup();
+                return;
+              }
+
+              if (item.action === "openManager") {
+                options.openManager();
+                return;
+              }
+
+              if (item.action === "openSettings") {
+                options.openSettings();
+                return;
+              }
+
+              app.quit();
+            }
+          };
+        })
+      ])
+    );
+
+    return tray;
+  };
+
+  return {
+    refresh: (settings: AppSettings) => {
+      ensureTray(settings);
+    }
+  };
 }

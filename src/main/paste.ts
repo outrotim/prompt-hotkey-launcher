@@ -1,50 +1,116 @@
-import { clipboard } from 'electron';
-import { exec } from 'child_process';
+import { execFile } from "node:child_process";
+import {
+  CLIPBOARD_RESTORE_DELAY_MS,
+  shouldRestorePreviousClipboard
+} from "./paste-clipboard.js";
+import { runNativePasteHelper } from "./native-paste.js";
 
-/**
- * Paste text into the currently focused application.
- * Strategy: save clipboard -> write text to clipboard -> simulate Cmd+V -> restore clipboard
- */
-export async function pasteToActiveApp(text: string): Promise<void> {
-  const previousClipboard = clipboard.readText();
-  clipboard.writeText(text);
-  await sleep(50);
-  await runAppleScript(`
-    tell application "System Events"
-      keystroke "v" using command down
-    end tell
-  `);
-  await sleep(200);
-  clipboard.writeText(previousClipboard);
+export async function pasteText(text: string) {
+  const clipboard = await loadElectronClipboard();
+  const platform = process.platform;
+
+  return pasteTextWithDependencies(text, {
+    platform,
+    readClipboard: () => clipboard.readText(),
+    writeClipboard: (nextText) => clipboard.writeText(nextText),
+    runNativePaste: () => runNativePasteHelper(platform),
+    runAppleScript: (args) => runAppleScript(args),
+    wait: (milliseconds) => wait(milliseconds)
+  });
 }
 
-function runAppleScript(script: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (err, stdout) => {
-      if (err) reject(err);
-      else resolve(stdout.trim());
+export async function pasteTextWithDependencies(
+  text: string,
+  dependencies: {
+    platform: NodeJS.Platform;
+    readClipboard: () => string;
+    writeClipboard: (nextText: string) => void;
+    runNativePaste: () => Promise<void>;
+    runAppleScript: (args: string[]) => Promise<void>;
+    wait: (milliseconds: number) => Promise<void>;
+  }
+) {
+  let previousClipboard = "";
+
+  console.info(`[paste:start] textLength=${text.length}`);
+
+  try {
+    previousClipboard = dependencies.readClipboard();
+  } catch {
+    // Clipboard unavailable (locked screen, permissions revoked, etc.)
+    console.warn("[paste:clipboard-read-before] unavailable");
+  }
+
+  dependencies.writeClipboard(text);
+  console.info("[paste:clipboard-written]");
+
+  try {
+    try {
+      await dependencies.runNativePaste();
+      console.info("[paste:native-helper-success]");
+    } catch (error) {
+      console.warn(`[paste:native-helper-failed] error=${describeError(error)}`);
+
+      if (dependencies.platform !== "darwin") {
+        throw error;
+      }
+
+      await dependencies.runAppleScript([
+        "-e",
+        'tell application "System Events" to keystroke "v" using command down'
+      ]);
+      console.info("[paste:applescript-success]");
+    }
+  } catch (error) {
+    console.warn(`[paste:applescript-failed] error=${describeError(error)}`);
+    throw error;
+  } finally {
+    await dependencies.wait(CLIPBOARD_RESTORE_DELAY_MS);
+
+    try {
+      const currentClipboard = dependencies.readClipboard();
+
+      if (shouldRestorePreviousClipboard(currentClipboard, text)) {
+        dependencies.writeClipboard(previousClipboard);
+        console.info("[paste:clipboard-restored]");
+      } else {
+        console.info("[paste:clipboard-restore-skipped]");
+      }
+    } catch {
+      // Clipboard unavailable during restore — nothing we can do
+      console.warn("[paste:clipboard-read-after] unavailable");
+    }
+  }
+}
+
+function runAppleScript(args: string[]) {
+  return new Promise<void>((resolve, reject) => {
+    execFile("osascript", args, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
     });
   });
 }
 
-/** Get cursor screen position using AppleScript */
-export async function getCursorPosition(): Promise<{ x: number; y: number }> {
-  try {
-    const result = await runAppleScript(`
-      use framework "AppKit"
-      set mouseLocation to current application's NSEvent's mouseLocation()
-      set screenHeight to (current application's NSScreen's mainScreen()'s frame()'s |size|()'s height) as integer
-      set x to (mouseLocation's x) as integer
-      set y to (screenHeight - (mouseLocation's y)) as integer
-      return (x as text) & "," & (y as text)
-    `);
-    const [x, y] = result.split(',').map(Number);
-    return { x: x || 0, y: y || 0 };
-  } catch {
-    return { x: 100, y: 100 };
-  }
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function describeError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+async function loadElectronClipboard() {
+  const electron = await import("electron");
+  return electron.clipboard;
 }
