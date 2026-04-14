@@ -1,6 +1,9 @@
-node_modules/
-dist/
-release/
-.env
-*.log
+node_modules
+dist
+dist-electron
+release
+out
 .DS_Store
+.idea
+.vscode
+*.log

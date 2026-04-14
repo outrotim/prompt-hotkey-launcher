@@ -1,36 +1,46 @@
-appId: com.promptlauncher.app
-productName: Prompt Launcher
-copyright: Copyright © 2024
-
-mac:
-  category: public.app-category.productivity
-  target:
-    - dmg
-    - zip
-  icon: build/icon.icns
-  darkModeSupport: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-
-dmg:
-  title: Prompt Launcher
-  artifactName: PromptLauncher-${version}.${ext}
-
+appId: com.promptbar.desktop
+productName: PromptBar
+artifactName: ${productName}-${version}-${arch}.${ext}
 directories:
   output: release
-  buildResources: build
-
 files:
-  - dist/**/*
-  - prompts/**/*
-  - "!node_modules/**/*.map"
-  - "!node_modules/**/*.md"
-
-publish:
-  - provider: github
-    owner: your-username
-    repo: prompt-hotkey-launcher
-
+  - out/**
+  - package.json
+asarUnpack:
+  - node_modules/promptbar-native-paste/build/Release/*.node
 extraResources:
-  - from: prompts/
-    to: prompts/
+  - from: prompts
+    to: prompts
+  - from: resources/app-icon.ico
+    to: app-icon.ico
+  - from: resources/TrayTemplate.png
+    to: TrayTemplate.png
+  - from: resources/TrayTemplate@2x.png
+    to: TrayTemplate@2x.png
+mac:
+  category: public.app-category.productivity
+  icon: resources/app-icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  notarize: true
+  target:
+    - dmg
+win:
+  icon: resources/app-icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+nsis:
+  artifactName: ${productName}-${version}-${arch}-setup.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+asar: true
