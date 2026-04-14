@@ -47,6 +47,7 @@ export function createHistoryStore(filePath: string): HistoryStore {
     unlinkSync,
     writeFileSync
   };
+  fileSystem.mkdirSync(dirname(filePath), { recursive: true });
   return createHistoryStoreWithFileSystem(filePath, fileSystem, {
     asyncFileSystem: createDefaultHistoryAsyncFileSystem(fileSystem),
     watchHistoryFile: (nextFilePath, invalidate) => {

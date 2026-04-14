@@ -32,6 +32,7 @@ import {
 function bootstrap() {
   let managerWindow: ReturnType<typeof createManagerWindow> | null = null;
   let settingsWindow: ReturnType<typeof createSettingsWindow> | null = null;
+  const appDataDirectory = join(app.getPath("userData"), "data");
   const platformRuntime = createPlatformRuntimeAdapter({
     app,
     getAccessibilityStatus,
@@ -41,15 +42,16 @@ function bootstrap() {
   });
   platformRuntime.applyActivationPolicy();
   let popupWindow = createPopupWindow();
+  mkdirSync(appDataDirectory, { recursive: true });
   const settingsStore = createSettingsStore(
-    join(app.getPath("userData"), "data", "settings.json")
+    join(appDataDirectory, "settings.json")
   );
   let promptsDirectory = resolvePromptsDirectory(settingsStore.getSettings().customPromptsDirectory);
   let promptLibraryStore = createPromptLibraryStore(promptsDirectory, {
     loadPromptLibrary: loadPromptLibraryAsync
   });
   const historyStore = createHistoryStore(
-    join(app.getPath("userData"), "data", "history.json")
+    join(appDataDirectory, "history.json")
   );
   const storeLifecycle = createStoreLifecycleManager([
     {

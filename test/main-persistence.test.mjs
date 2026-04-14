@@ -80,6 +80,28 @@ historyStore.dispose();
   }
 });
 
+test("history store initializes cleanly when its parent data directory does not exist yet", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "promptbar-history-init-"));
+  const historyPath = join(fixtureRoot, "data", "history.json");
+
+  try {
+    const result = runTypeScriptCheck(`
+import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { dirname } from "node:path";
+import { createHistoryStore } from "./src/main/history.ts";
+
+const historyStore = createHistoryStore(${JSON.stringify(historyPath)});
+assert.equal(existsSync(dirname(${JSON.stringify(historyPath)})), true);
+historyStore.dispose();
+`);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.equal(existsSync(dirname(historyPath)), true);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test("history store caches records in memory and annotates prompts immediately before async disk flush completes", () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "promptbar-history-cache-"));
   const historyPath = join(fixtureRoot, "history.json");
